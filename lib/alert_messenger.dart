@@ -97,7 +97,7 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
 
   Widget? alertWidget;
 
-  //Criei uma fila de alertas para controlar prioridades
+  //Create an alert queue to control priorities
   List<Alert> alertQueue = [];
 
   @override
@@ -173,12 +173,17 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
                 child: widget.child,
               ),
             ),
-            Positioned(
-              top: animation.value,
-              left: 0,
-              right: 0,
-              child: alertWidget ?? const SizedBox.shrink(),
-            ),
+           // Display all alerts in the queue, stacked
+            ...alertQueue.asMap().entries.map((entry) {
+              final index = entry.key;
+              final alert = entry.value;
+              return Positioned(
+                top: animation.value - (index * kAlertHeight * 0.8), // Offset stacked alerts
+                left: 0,
+                right: 0,
+                child: alert,
+              );
+            }).toList(),
           ],
         );
       },
