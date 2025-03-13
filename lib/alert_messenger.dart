@@ -99,6 +99,8 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
 
   //Create an alert queue to control priorities
   List<Alert> alertQueue = [];
+  final Map<Alert, AnimationController> alertControllers = {};
+
 
   @override
   void initState() {
@@ -110,50 +112,50 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
     );
   }
 
-  @override
+    @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final alertHeight = MediaQuery.of(context).padding.top + kAlertHeight;
-    animation = Tween<double>(begin: -alertHeight, end: 0.0).animate(
-      CurvedAnimation(parent: controller, curve: Curves.easeInOut),
-    );
   }
 
-  @override
-  void dispose() {
+   void dispose() {
     controller.dispose();
+    for (var ac in alertControllers.values) {
+      ac.dispose();
+    }
     super.dispose();
   }
 
-  void showAlert({required Alert alert}) {
-    
-    //It will only add a new clicked alert if it is of higher priority
+   void showAlert({required Alert alert}) {
     if (alertQueue.isNotEmpty && alertQueue.last.priority.value >= alert.priority.value) {
-      return; 
+      return;
     }
 
-     setState(() {
-      //adds to the alert list and also links to the current one
-      alertQueue.add(alert);
-      alertWidget = alertQueue.last;
-    });
+    final newController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
 
-    controller.forward();
+    setState(() {
+      alertQueue.add(alert);
+      alertControllers[alert] = newController;
+    });
+    newController.forward();
   }
 
-  void hideAlert() {
-     if (alertQueue.isEmpty) return;
+    void hideAlert() {
+    if (alertQueue.isEmpty) return;
 
-    controller.reverse().then((_) {
+    final currentAlert = alertQueue.last;
+    final currentController = alertControllers[currentAlert];
+    
+    currentController?.reverse().then((_) {
       setState(() {
-        alertQueue.removeLast(); //remove the current alert
-        alertWidget = alertQueue.isNotEmpty ? alertQueue.last : null;
-        if (alertWidget != null) {
-          controller.forward(); //show the next alert, if any
-        }
+        alertQueue.remove(currentAlert);
+        alertControllers.remove(currentAlert);
       });
     });
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -173,17 +175,25 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
                 child: widget.child,
               ),
             ),
-           // Display all alerts in the queue, stacked
-            ...alertQueue.asMap().entries.map((entry) {
-              final index = entry.key;
-              final alert = entry.value;
+          ...alertQueue.asMap().entries.map((entry) {
+          final index = entry.key;
+          final alert = entry.value;
+          final alertAnimation = alertControllers[alert]?.drive(
+            Tween<double>(begin: -kAlertHeight, end: index * kAlertHeight * 0.8),
+          );
+          
+          return AnimatedBuilder(
+            animation: alertAnimation ?? const AlwaysStoppedAnimation(0),
+            builder: (context, child) {
               return Positioned(
-                top: animation.value - (index * kAlertHeight * 0.8), // Offset stacked alerts
+                top: (alertAnimation?.value ?? 0) + statusbarHeight,
                 left: 0,
                 right: 0,
                 child: alert,
               );
-            }).toList(),
+            },
+          );
+        }).toList(),
           ],
         );
       },
