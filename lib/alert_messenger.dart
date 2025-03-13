@@ -83,18 +83,14 @@ class AlertMessenger extends StatefulWidget {
       throw FlutterError.fromParts(
         [
           ErrorSummary('No AlertMessenger was found in the Element tree'),
-          ErrorDescription(
-              'AlertMessenger is required in order to show and hide alerts.'),
-          ...context.describeMissingAncestor(
-              expectedAncestorType: AlertMessenger),
+          ErrorDescription('AlertMessenger is required in order to show and hide alerts.'),
+          ...context.describeMissingAncestor(expectedAncestorType: AlertMessenger),
         ],
       );
     }
   }
 }
-
-class AlertMessengerState extends State<AlertMessenger>
-    with TickerProviderStateMixin {
+class AlertMessengerState extends State<AlertMessenger> with TickerProviderStateMixin {
   final List<Alert> alertQueue = [];
   final Map<Alert, AnimationController> alertControllers = {};
   final Map<Alert, Animation<double>> alertAnimations = {};
@@ -110,8 +106,7 @@ class AlertMessengerState extends State<AlertMessenger>
   }
 
   void showAlert({required Alert alert}) {
-    if (alertQueue.isNotEmpty &&
-        alertQueue.last.priority.value >= alert.priority.value) {
+    if (alertQueue.isNotEmpty && alertQueue.last.priority.value >= alert.priority.value) {
       return;
     }
 
@@ -138,15 +133,13 @@ class AlertMessengerState extends State<AlertMessenger>
 
     final currentAlert = alertQueue.last;
     final currentController = alertControllers[currentAlert];
-
+    
     currentController?.reverse().then((_) {
       setState(() {
         alertQueue.remove(currentAlert);
         alertControllers.remove(currentAlert);
         alertAnimations.remove(currentAlert);
-        currentAlertMessage.value = alertQueue.isNotEmpty
-            ? (alertQueue.last.child as Text).data ?? ""
-            : "";
+        currentAlertMessage.value = alertQueue.isNotEmpty ? (alertQueue.last.child as Text).data ?? "" : "";
       });
     });
   }
@@ -169,15 +162,13 @@ class AlertMessengerState extends State<AlertMessenger>
             top: 0,
             child: widget.child,
           ),
-          // Display only the top alert with the correct animation
+          // Display only the top alert with its corresponding animation
           if (alertQueue.isNotEmpty) ...[
             AnimatedBuilder(
-              animation: alertAnimations[alertQueue.last] ??
-                  const AlwaysStoppedAnimation(0),
+              animation: alertAnimations[alertQueue.last] ?? const AlwaysStoppedAnimation(0),
               builder: (context, child) {
                 return Positioned(
-                  top: alertAnimations[alertQueue.last]?.value ??
-                      -kAlertHeight + statusbarHeight,
+                  top: alertAnimations[alertQueue.last]?.value ?? -kAlertHeight + statusbarHeight,
                   left: 0,
                   right: 0,
                   child: alertQueue.last,
@@ -200,8 +191,7 @@ class _AlertMessengerScope extends InheritedWidget {
   final AlertMessengerState state;
 
   @override
-  bool updateShouldNotify(_AlertMessengerScope oldWidget) =>
-      state != oldWidget.state;
+  bool updateShouldNotify(_AlertMessengerScope oldWidget) => state != oldWidget.state;
 
   static _AlertMessengerScope? maybeOf(BuildContext context) {
     return context.dependOnInheritedWidgetOfExactType<_AlertMessengerScope>();
