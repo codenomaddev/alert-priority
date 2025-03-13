@@ -97,6 +97,9 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
 
   Widget? alertWidget;
 
+  //Criei uma fila de alertas para controlar prioridades
+  List<Alert> alertQueue = [];
+
   @override
   void initState() {
     super.initState();
@@ -123,12 +126,33 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
   }
 
   void showAlert({required Alert alert}) {
-    setState(() => alertWidget = alert);
+    
+    //It will only add a new clicked alert if it is of higher priority
+    if (alertQueue.isNotEmpty && alertQueue.last.priority.value >= alert.priority.value) {
+      return; 
+    }
+
+     setState(() {
+      //adds to the alert list and also links to the current one
+      alertQueue.add(alert);
+      alertWidget = alertQueue.last;
+    });
+
     controller.forward();
   }
 
   void hideAlert() {
-    controller.reverse();
+     if (alertQueue.isEmpty) return;
+
+    controller.reverse().then((_) {
+      setState(() {
+        alertQueue.removeLast(); //remove the current alert
+        alertWidget = alertQueue.isNotEmpty ? alertQueue.last : null;
+        if (alertWidget != null) {
+          controller.forward(); //show the next alert, if any
+        }
+      });
+    });
   }
 
   @override
