@@ -95,30 +95,26 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
   late final AnimationController controller;
   late final Animation<double> animation;
 
-  Widget? alertWidget;
-
-  //Create an alert queue to control priorities
-  List<Alert> alertQueue = [];
+  final List<Alert> alertQueue = [];
   final Map<Alert, AnimationController> alertControllers = {};
-  String currentAlertMessage = "<Add priority alert text here>";
-
+  String currentAlertMessage = "";
 
   @override
   void initState() {
     super.initState();
-
     controller = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
   }
 
-    @override
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
   }
 
-   void dispose() {
+  @override
+  void dispose() {
     controller.dispose();
     for (var ac in alertControllers.values) {
       ac.dispose();
@@ -126,7 +122,7 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
     super.dispose();
   }
 
-    void showAlert({required Alert alert}) {
+  void showAlert({required Alert alert}) {
     if (alertQueue.isNotEmpty && alertQueue.last.priority.value >= alert.priority.value) {
       return;
     }
@@ -154,69 +150,55 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
       setState(() {
         alertQueue.remove(currentAlert);
         alertControllers.remove(currentAlert);
-        currentAlertMessage = alertQueue.isNotEmpty ? (alertQueue.last.child as Text).data ?? "" : "<Add priority alert text here>";
+        currentAlertMessage = alertQueue.isNotEmpty ? (alertQueue.last.child as Text).data ?? "" : "";
       });
     });
   }
 
+  static String getCurrentAlertMessage(BuildContext context) {
+    final state = _AlertMessengerScope.of(context).state;
+    return state.currentAlertMessage;
+  }
 
   @override
   Widget build(BuildContext context) {
     final statusbarHeight = MediaQuery.of(context).padding.top;
 
-    return Stack(
-      clipBehavior: Clip.antiAliasWithSaveLayer,
-      children: [
-        Positioned.fill(
-          top: 0,
-          child: _AlertMessengerScope(
-            state: this,
-            child: Column(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: Center(
-                    child: Text(
-                      currentAlertMessage,
-                      style: TextStyle(
-                        color: Colors.grey[500],
-                        fontSize: 16.0,
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 7,
-                  child: widget.child,
-                ),
-              ],
-            ),
+    return _AlertMessengerScope(
+      state: this,
+      child: Stack(
+        clipBehavior: Clip.antiAliasWithSaveLayer,
+        children: [
+          Positioned.fill(
+            top: 0,
+            child: widget.child,
           ),
-        ),
-        // Display all alerts in the queue with animations
-        ...alertQueue.asMap().entries.map((entry) {
-          final index = entry.key;
-          final alert = entry.value;
-          final alertAnimation = alertControllers[alert]?.drive(
-            Tween<double>(begin: -kAlertHeight, end: index * kAlertHeight * 0.8),
-          );
-          
-          return AnimatedBuilder(
-            animation: alertAnimation ?? const AlwaysStoppedAnimation(0),
-            builder: (context, child) {
-              return Positioned(
-                top: (alertAnimation?.value ?? 0) + statusbarHeight,
-                left: 0,
-                right: 0,
-                child: alert,
-              );
-            },
-          );
-        }).toList(),
-      ],
+          // Display all alerts in the queue with animations
+          ...alertQueue.asMap().entries.map((entry) {
+            final index = entry.key;
+            final alert = entry.value;
+            final alertAnimation = alertControllers[alert]?.drive(
+              Tween<double>(begin: -kAlertHeight, end: index * kAlertHeight * 0.8),
+            );
+            
+            return AnimatedBuilder(
+              animation: alertAnimation ?? const AlwaysStoppedAnimation(0),
+              builder: (context, child) {
+                return Positioned(
+                  top: (alertAnimation?.value ?? 0) + statusbarHeight,
+                  left: 0,
+                  right: 0,
+                  child: alert,
+                );
+              },
+            );
+          }).toList(),
+        ],
+      ),
     );
   }
 }
+
 
 class _AlertMessengerScope extends InheritedWidget {
   const _AlertMessengerScope({

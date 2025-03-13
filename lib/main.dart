@@ -36,12 +36,13 @@ class AlertPriorityApp extends StatelessWidget {
                       flex: 3,
                       child: Center(
                         child: Text(
-                          '<Adicione o texto do alerta de prioridade aqui>',
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 16.0,
-                          ),
-                        ),
+  AlertMessengerState.getCurrentAlertMessage(context),
+  style: TextStyle(
+    color: Colors.grey[500],
+    fontSize: 16.0,
+  ),
+),
+
                       ),
                     ),
                     Expanded(
