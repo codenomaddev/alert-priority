@@ -100,6 +100,7 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
   //Create an alert queue to control priorities
   List<Alert> alertQueue = [];
   final Map<Alert, AnimationController> alertControllers = {};
+  String currentAlertMessage = "<Add priority alert text here>";
 
 
   @override
@@ -125,7 +126,7 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
     super.dispose();
   }
 
-   void showAlert({required Alert alert}) {
+    void showAlert({required Alert alert}) {
     if (alertQueue.isNotEmpty && alertQueue.last.priority.value >= alert.priority.value) {
       return;
     }
@@ -138,11 +139,12 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
     setState(() {
       alertQueue.add(alert);
       alertControllers[alert] = newController;
+      currentAlertMessage = (alert.child as Text).data ?? "";
     });
     newController.forward();
   }
 
-    void hideAlert() {
+  void hideAlert() {
     if (alertQueue.isEmpty) return;
 
     final currentAlert = alertQueue.last;
@@ -152,6 +154,7 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
       setState(() {
         alertQueue.remove(currentAlert);
         alertControllers.remove(currentAlert);
+        currentAlertMessage = alertQueue.isNotEmpty ? (alertQueue.last.child as Text).data ?? "" : "<Add priority alert text here>";
       });
     });
   }
@@ -161,21 +164,37 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
   Widget build(BuildContext context) {
     final statusbarHeight = MediaQuery.of(context).padding.top;
 
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, child) {
-        final position = animation.value + kAlertHeight;
-        return Stack(
-          clipBehavior: Clip.antiAliasWithSaveLayer,
-          children: [
-            Positioned.fill(
-              top: position <= statusbarHeight ? 0 : position - statusbarHeight,
-              child: _AlertMessengerScope(
-                state: this,
-                child: widget.child,
-              ),
+    return Stack(
+      clipBehavior: Clip.antiAliasWithSaveLayer,
+      children: [
+        Positioned.fill(
+          top: 0,
+          child: _AlertMessengerScope(
+            state: this,
+            child: Column(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Center(
+                    child: Text(
+                      currentAlertMessage,
+                      style: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 16.0,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 7,
+                  child: widget.child,
+                ),
+              ],
             ),
-          ...alertQueue.asMap().entries.map((entry) {
+          ),
+        ),
+        // Display all alerts in the queue with animations
+        ...alertQueue.asMap().entries.map((entry) {
           final index = entry.key;
           final alert = entry.value;
           final alertAnimation = alertControllers[alert]?.drive(
@@ -194,9 +213,7 @@ class AlertMessengerState extends State<AlertMessenger> with TickerProviderState
             },
           );
         }).toList(),
-          ],
-        );
-      },
+      ],
     );
   }
 }
